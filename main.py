@@ -1,54 +1,33 @@
+from __future__ import unicode_literals
 import os
-import json, ssl, urllib.request
-from math import sin, cos, sqrt, atan2, radians
-
-# Approximate radius of earth in km
-R = 6373.0
+from flask import Flask, request, abort
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from ubike import get_data, get_sites
 
 LINE_ACCESS_TOKEN = os.getenv("LINE_ACCESS_TOKEN")
 LINE_SECRET_KEY = os.getenv("LINE_SECRET_KEY")
-UBIKE_URL = "https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json"
 
 
+app = Flask(__name__)
 
-context = ssl._create_unverified_context()
+line_bot_api = LineBotApi(LINE_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_SECRET_KEY)
 
-with urllib.request.urlopen(UBIKE_URL, context=context) as jsondata:
-     data = json.loads(jsondata.read().decode('utf-8-sig')) 
+# 接收 LINE 的資訊
+@app.route("/callback", methods=['POST'])
+def callback():
+    signature = request.headers['X-Line-Signature']
 
-def get_sites(data, user_lat, user_lng, top_number):
-    top_data = []
-    for i,v in enumerate(data):
-        lat = v["lat"]
-        lng = v["lng"]
-        dlng = user_lng - lng
-        dlat = user_lat - lat
-        a = sin(dlat / 2)**2 + cos(lat) * cos(user_lat) * sin(dlng / 2)**2
-        c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        distance = R * c
-        if len(top_data) > top_number:
-            (max_dist, max_id) = max((v["dist"],j) for j,v in enumerate(top_data))
-            if max_dist > distance:
-                top_data[max_id] = {"id":i, "dist":distance} 
-        else:
-            top_data.append({"id":i, "dist":distance})
-    
-    
-    return sorted(top_data, key=lambda k: k['dist'])
-    
+    body = request.get_data(as_text=True)
+    app.logger.info("Request body: " + body)
 
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
 
+    return 'OK'
 
-sites = get_sites(data, 25.033964, 121.564468, 10)
-
-for i in sites:
-    d = data[i["id"]]
-    sbi = d["sbi"] # available bike 
-    tot = d["tot"] # total bike 
-    bemp = d["bemp"] # free bike 
-    name = d["sna"].replace("YouBike2.0_", "")
-    lat, lng = d["lat"], d["lng"]
-    google_map_link = "https://www.google.com/maps/search/?api=1&query={},{}".format(lat, lng)
-    # userLocation[event.source.userId].latitude;
-    # const lng = userLocation[event.source.userId].longitude;
-    print(name, i["dist"], google_map_link) 
+if __name__ == "__main__":
+    app.run()

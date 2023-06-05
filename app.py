@@ -23,6 +23,7 @@ def callback():
     signature = request.headers['X-Line-Signature']
 
     body = request.get_data(as_text=True)
+    print(body)
     app.logger.info("Request body: " + body)
 
     try:
@@ -34,11 +35,16 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def echo(event):
+    print(event)
     if event.source.user_id != "Udeadbeefdeadbeefdeadbeefdeadbeef":
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text=event.message.text)
         )
+
+@app.route("/")
+def root():
+    return "Line Bot"
 
 if __name__ == "__main__":
     app.run()

@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import os
+import json
 
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
@@ -44,6 +45,9 @@ def echo(event):
 
 @app.route("/")
 def root():
+    body = request.get_data(as_text=True)
+    json_data = json.loads(body)
+    print(json_data)
     return "Line Bot"
 
 if __name__ == "__main__":

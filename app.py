@@ -10,7 +10,7 @@ from ubike import get_data, get_sites
 
 LINE_ACCESS_TOKEN = os.getenv("LINE_ACCESS_TOKEN")
 LINE_SECRET_KEY = os.getenv("LINE_SECRET_KEY")
-
+print(LINE_ACCESS_TOKEN, LINE_SECRET_KEY)
 
 app = Flask(__name__)
 
@@ -36,11 +36,10 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def echo(event):
     print(event)
-    if event.source.user_id != "Udeadbeefdeadbeefdeadbeefdeadbeef":
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(text=event.message.text)
-        )
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=event.message.text)
+    )
 
 @app.route("/")
 def root():
